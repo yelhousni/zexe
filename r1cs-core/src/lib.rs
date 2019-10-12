@@ -14,7 +14,7 @@ mod error;
 mod impl_lc;
 mod impl_constraint_var;
 
-pub use constraint_system::{ConstraintSystem, ConstraintSynthesizer, Namespace};
+pub use constraint_system::{ConstraintSystem, ConstraintSynthesizer, Namespace, StandardConstraintSystem, Mode};
 pub use error::SynthesisError;
 pub use algebra::ToConstraintField;
 
