@@ -6,7 +6,7 @@ use crate::{
     One,
 };
 
-use crate::bw6_761::{Fq, Fq3, Fq6, FqParameters, Fr};
+use crate::sw6_bis::{Fq, Fq3, Fq6, FqParameters, Fr};
 
 pub mod g1;
 pub use self::g1::{G1Affine, G1Projective};
@@ -70,7 +70,7 @@ impl BW6_761 {
         let mut f = Fq6::one();
 
         // The for loop is executed for all bits (EXCEPT the MSB itself) of
-        // bw6_761_param_p (skipping leading zeros) in MSB to LSB order
+        // sw6_bis_param_p (skipping leading zeros) in MSB to LSB order
         let mut found_one = false;
         for bit in BitIterator::new(ATE_LOOP_COUNT) {
             if !found_one && bit {

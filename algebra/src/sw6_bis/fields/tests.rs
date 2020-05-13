@@ -1,7 +1,7 @@
 use algebra_core::{buffer_bit_byte_size, test_rng, CanonicalSerialize, Field, PrimeField};
 use rand::Rng;
 
-use crate::bw6_761::*;
+use crate::sw6_bis::*;
 
 use crate::tests::fields::{
     field_serialization_test, field_test, frobenius_test, primefield_test, sqrt_field_test,

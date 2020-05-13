@@ -4,7 +4,7 @@ use crate::{
     fields::fp3::{Fp3, Fp3Parameters},
 };
 
-use crate::bw6_761::Fq;
+use crate::sw6_bis::Fq;
 
 pub type Fq3 = Fp3<Fq3Parameters>;
 
