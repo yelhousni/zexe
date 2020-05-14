@@ -1,7 +1,7 @@
-#[cfg(feature = "sw6_bis")]
+#[cfg(feature = "bw6_bis")]
 mod curves;
 mod fields;
 
-#[cfg(feature = "sw6_bis")]
+#[cfg(feature = "bw6_bis")]
 pub use curves::*;
 pub use fields::*;

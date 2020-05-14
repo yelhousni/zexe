@@ -1,7 +1,7 @@
 use algebra_core::{test_rng, AffineCurve, Field, One, PairingEngine, PrimeField, ProjectiveCurve};
 use rand::Rng;
 
-use crate::sw6_bis::*;
+use crate::bw6_bis::*;
 
 use crate::tests::{curves::*, groups::*};
 
