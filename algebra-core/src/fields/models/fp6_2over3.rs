@@ -63,6 +63,10 @@ impl<P: Fp6Parameters> Fp6<P> {
         }
     }
 
+    pub fn conjugate(&mut self) {
+        self.c1 = self.c1.neg();
+    }
+
     /// Multiply by quadratic nonresidue v.
     pub fn mul_by_nonresidue(value: &Fp3<P::Fp3Params>) -> Fp3<P::Fp3Params> {
         let mut res = *value;

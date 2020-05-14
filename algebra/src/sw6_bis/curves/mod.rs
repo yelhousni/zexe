@@ -124,11 +124,19 @@ impl BW6_761 {
         f
     }
 
+    fn exp_by_x(elt: &Fq6) -> Fq6 {
+        let mut elt_x = elt.clone();
+        elt_x = elt_x.cyclotomic_exp(&SEED);
+        if SEED_NEG {
+            elt_x.conjugate();
+        }
+        elt_x
+    }
+
     fn final_exponentiation(value: &Fq6) -> GT {
         let value_inv = value.inverse().unwrap();
         let value_to_first_chunk = BW6_761::final_exponentiation_first(value, &value_inv);
-        let value_inv_to_first_chunk = BW6_761::final_exponentiation_first(&value_inv, value);
-        BW6_761::final_exponentiation_last(&value_to_first_chunk, &value_inv_to_first_chunk)
+        BW6_761::final_exponentiation_last(&value_to_first_chunk)
     }
 
     fn final_exponentiation_first(elt: &Fq6, elt_inv: &Fq6) -> Fq6 {
@@ -146,18 +154,113 @@ impl BW6_761 {
         alpha * &elt_q3_over_elt
     }
 
-    fn final_exponentiation_last(elt: &Fq6, elt_inv: &Fq6) -> Fq6 {
-        let mut elt_q = elt.clone();
-        elt_q.frobenius_map(1);
+    fn final_exponentiation_last(elt: &Fq6) -> Fq6 {
 
-        let w1_part = elt_q.cyclotomic_exp(&FINAL_EXPONENT_LAST_CHUNK_W1);
-        let w0_part = if FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG {
-            elt_inv.cyclotomic_exp(&FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0)
-        } else {
-            elt.cyclotomic_exp(&FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0)
-        };
+        /* Algorithm 6 in https://eprint.iacr.org/2020/351.pdf
+         *
+         * R0(x) := (-103*x^7 + 70*x^6 + 269*x^5 - 197*x^4 - 314*x^3 - 73*x^2 - 263*x - 220)
+         * R1(x) := (103*x^9 - 276*x^8 + 77*x^7 + 492*x^6 - 445*x^5 - 65*x^4 + 452*x^3 - 181*x^2 + 34*x + 229)
+         *
+         * elt ^ R0(SEED) * (elt ^ q) ^ R1(SEED) where elt^q is a Frobenius power in Fq6.
+         */
 
-        w1_part * &w0_part
+        // steps 1,2,3
+        let f0 = elt.clone();
+        let mut f0p = f0;
+        f0p.frobenius_map(1);
+        let f1 = BW6_761::exp_by_x(&f0);
+        let mut f1p = f1;
+        f1p.frobenius_map(1);
+        let f2 = BW6_761::exp_by_x(&f1);
+        let mut f2p = f2;
+        f2p.frobenius_map(1);
+        let f3 = BW6_761::exp_by_x(&f2);
+        let mut f3p = f3;
+        f3p.frobenius_map(1);
+        let f4 = BW6_761::exp_by_x(&f3);
+        let mut f4p = f4;
+        f4p.frobenius_map(1);
+        let f5 = BW6_761::exp_by_x(&f4);
+        let mut f5p = f5;
+        f5p.frobenius_map(1);
+        let f6 = BW6_761::exp_by_x(&f5);
+        let mut f6p = f6;
+        f6p.frobenius_map(1);
+        let f7 = BW6_761::exp_by_x(&f6);
+        let mut f7p = f7;
+        f7p.frobenius_map(1);
+
+        // step 4
+        let f8p = BW6_761::exp_by_x(&f7p);
+        let f9p = BW6_761::exp_by_x(&f8p);
+
+        // step 5
+        let mut f5p_p3 = f5p;
+        f5p_p3.frobenius_map(3);
+        let result1 = f3p * &f6p * &f5p_p3;
+
+        // step 6
+        let result2 = result1.square();
+        let f4_2p = f4 * &f2p;
+        let mut tmp1_p3 = f0 * &f1 * &f3 * &f4_2p * &f8p;
+        tmp1_p3.frobenius_map(3);
+        let result3 = result2 * &f5 * &f0p * &tmp1_p3;
+
+        // step 7
+        let result4 = result3.square();
+        let mut f7_p3 = f7;
+        f7_p3.frobenius_map(3);
+        let result5 = result4 * &f9p * &f7_p3;
+
+        // step 8
+        let result6 = result5.square();
+        let f2_4p = f2 * &f4p;
+        let f4_2p_5p = f4_2p * &f5p;
+        let mut tmp2_p3 = f2_4p * &f3 * &f3p;
+        tmp2_p3.frobenius_map(3);
+        let result7 = result6 * &f4_2p_5p * &f6 * &f7p * &tmp2_p3;
+
+        // step 9
+        let result8 = result7.square();
+        let mut tmp3_p3 = f0p * &f9p;
+        tmp3_p3.frobenius_map(3);
+        let result9 = result8 * &f0 * &f7 * &f1p * &tmp3_p3;
+
+        // step 10
+        let result10 = result9.square();
+        let f6p_8p = f6p * &f8p;
+        let f5_7p = f5 * &f7p;
+        let mut tmp4_p3 = f6p_8p;
+        tmp4_p3.frobenius_map(3);
+        let result11 = result10 * &f5_7p * &f2p * &tmp4_p3;
+
+        // step 11
+        let result12 = result11.square();
+        let f3_6 = f3 * &f6;
+        let f1_7 = f1 * &f7;
+        let mut tmp5_p3 = f1_7 * &f2;
+        tmp5_p3.frobenius_map(3);
+        let result13 = result12 * &f3_6 * &f9p * &tmp5_p3;
+
+        // step 12
+        let result14 = result13.square();
+        let mut tmp6_p3 = f4_2p * &f5_7p * &f6p_8p;
+        tmp6_p3.frobenius_map(3);
+        let result15 = result14 * &f0 * &f0p * &f3p * &f5p * &tmp6_p3;
+
+        // step 13
+        let result16 = result15.square();
+        let mut tmp7_p3 = f3_6;
+        tmp7_p3.frobenius_map(3);
+        let result17 = result16 * &f1p * &tmp7_p3;
+
+        // step 14
+        let result18 = result17.square();
+        let mut tmp8_p3 = f2_4p * &f4_2p_5p * &f9p;
+        tmp8_p3.frobenius_map(3);
+        let result19 = result18 * &f1_7 * &f5_7p * &f0p * &tmp8_p3;
+
+        result19
     }
 }
 
@@ -183,6 +286,13 @@ pub const ATE_LOOP_COUNT: &'static [u64] = &[
     1923874642746257132,
     1574278065184431084,
 ];
+
+/// SEED_NEG = false
+pub const SEED_NEG: bool = false;
+
+/// SEED =
+/// 9586122913090633729
+pub const SEED: BigInteger768 = BigInteger768([0x8508c00000000001, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
 
 /// FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG = false
 pub const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool = false;
