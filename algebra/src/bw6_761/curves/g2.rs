@@ -1,15 +1,17 @@
-use crate::{
-    biginteger::{BigInteger384, BigInteger768},
+use crate::bw6_761::{self, g1, Fq, Fq3, Fr, FQ_ZERO};
+use algebra_core::{
+    biginteger::{BigInteger768, BigInteger384},
     curves::{
+        bw6,
+        bw6::BW6Parameters,
         models::{ModelParameters, SWModelParameters},
-        short_weierstrass_jacobian::{GroupAffine, GroupProjective},
     },
     field_new,
-    bw6_bis::{Fq, Fq3, Fr, FQ_ZERO},
 };
 
-pub type G2Affine = GroupAffine<Parameters>;
-pub type G2Projective = GroupProjective<Parameters>;
+pub type G2Affine = bw6::G2Affine<bw6_761::Parameters>;
+pub type G2Projective = bw6::G2Projective<bw6_761::Parameters>;
+pub type G2Prepared = bw6::G2Prepared<bw6_761::Parameters>;
 
 #[derive(Clone, Default, PartialEq, Eq)]
 pub struct Parameters;
@@ -19,18 +21,55 @@ impl ModelParameters for Parameters {
     type ScalarField = Fr;
 }
 
-impl SWModelParameters for Parameters {
-    /// COEFF_A = (0, 0, COEFF_A * TWIST^2) = (0, 0, 0)
-    #[rustfmt::skip]
-    const COEFF_A: Fq3 = field_new!(Fq3,
-        FQ_ZERO,
-        FQ_ZERO,
-        FQ_ZERO,
-    );
+/// MUL_BY_A_C0 = NONRESIDUE * COEFF_A
+#[rustfmt::skip]
+pub const MUL_BY_A_C0: Fq = field_new!(Fq, BigInteger768([
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+]));
 
-    /// COEFF_B = (G1::COEFF_B * TWIST^3, 0, 0) =
-    /// (6891450384315732539396789682275657542479668912536150109513790160209623422243491736087683183289411687640864567753786613451161759120554247759349511699125301598951605099378508850372543631423596795951899700429969112842764913119068297,
-    /// 0, 0)
+/// MUL_BY_A_C1 = NONRESIDUE * COEFF_A
+#[rustfmt::skip]
+pub const MUL_BY_A_C1: Fq = field_new!(Fq, BigInteger768([
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+]));
+
+/// MUL_BY_A_C2 = COEFF_A
+pub const MUL_BY_A_C2: Fq = g1::Parameters::COEFF_A;
+
+impl SWModelParameters for Parameters {
+    const COEFF_A: Fq3 = bw6_761::Parameters::TWIST_COEFF_A;
+    // B coefficient of BW6-761 G2 =
+    // ```
+    // bw6_761_twist_coeff_b = bw6_761_Fq3(bw6_761_G1::coeff_b * bw6_761_Fq3::non_residue,
+    //                                  bw6_761_Fq::zero(), bw6_761_Fq::zero());
+    // non_residue = bw6_761_Fq3::non_residue = bw6_761_Fq("11");
+    //  = (G1_B_COEFF * NON_RESIDUE, ZERO, ZERO);
+    //  =
+    //  (2189526091197672465268098090392210500740714959757583916377481826443393499947557697773546040576162515434508768057245887856591913752342600919117433675080691499697020523783784738694360040853591723916201150207746019687604267190251,
+    //  0, 0)
+    // ```
     #[rustfmt::skip]
     const COEFF_B: Fq3 = field_new!(Fq3,
         field_new!(Fq, BigInteger768([
@@ -102,6 +141,16 @@ impl SWModelParameters for Parameters {
     /// AFFINE_GENERATOR_COEFFS = (G2_GENERATOR_X, G2_GENERATOR_Y)
     const AFFINE_GENERATOR_COEFFS: (Self::BaseField, Self::BaseField) =
         (G2_GENERATOR_X, G2_GENERATOR_Y);
+
+    #[inline(always)]
+    fn mul_by_a(elt: &Fq3) -> Fq3 {
+        field_new!(
+            Fq3,
+            MUL_BY_A_C0 * &elt.c1,
+            MUL_BY_A_C1 * &elt.c2,
+            MUL_BY_A_C2 * &elt.c0,
+        )
+    }
 }
 
 const G2_GENERATOR_X: Fq3 =

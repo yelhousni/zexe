@@ -1,15 +1,16 @@
-use crate::{
-    biginteger::{BigInteger384, BigInteger768},
+use crate::bw6_761::{self, Fq, Fr};
+use algebra_core::{
+    biginteger::{BigInteger768, BigInteger384},
     curves::{
+        bw6,
         models::{ModelParameters, SWModelParameters},
-        short_weierstrass_jacobian::{GroupAffine, GroupProjective},
     },
     field_new,
-    bw6_bis::{Fq, Fr},
 };
 
-pub type G1Affine = GroupAffine<Parameters>;
-pub type G1Projective = GroupProjective<Parameters>;
+pub type G1Affine = bw6::G1Affine<bw6_761::Parameters>;
+pub type G1Projective = bw6::G1Projective<bw6_761::Parameters>;
+pub type G1Prepared = bw6::G1Prepared<bw6_761::Parameters>;
 
 #[derive(Clone, Default, PartialEq, Eq)]
 pub struct Parameters;
@@ -22,10 +23,9 @@ impl ModelParameters for Parameters {
 impl SWModelParameters for Parameters {
     /// COEFF_A = 0
     #[rustfmt::skip]
-
     const COEFF_A: Fq = field_new!(Fq, BigInteger768([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
 
-    /// COEFF_B = 6891450384315732539396789682275657542479668912536150109513790160209623422243491736087683183289411687640864567753786613451161759120554247759349511699125301598951605099378508850372543631423596795951899700429969112842764913119068298
+/// COEFF_B = 6891450384315732539396789682275657542479668912536150109513790160209623422243491736087683183289411687640864567753786613451161759120554247759349511699125301598951605099378508850372543631423596795951899700429969112842764913119068298
     #[rustfmt::skip]
     const COEFF_B: Fq = field_new!(Fq, BigInteger768([
         0xf29a000000007ab6,
