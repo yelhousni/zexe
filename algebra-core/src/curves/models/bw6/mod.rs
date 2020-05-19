@@ -25,13 +25,15 @@ pub use self::{
 pub type GT<P> = Fp6<P>;
 
 pub trait BW6Parameters: 'static {
+    const X: <Self::Fp as PrimeField>::BigInt;
+    const X_IS_NEGATIVE: bool;
     const TWIST: Fp3<Self::Fp3Params>;
     const TWIST_COEFF_A: Fp3<Self::Fp3Params>;
     const ATE_LOOP_COUNT: &'static [u64];
     const ATE_IS_LOOP_COUNT_NEG: bool;
-    const FINAL_EXPONENT_LAST_CHUNK_1: <Self::Fp as PrimeField>::BigInt;
-    const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool;
-    const FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0: <Self::Fp as PrimeField>::BigInt;
+    // const FINAL_EXPONENT_LAST_CHUNK_1: <Self::Fp as PrimeField>::BigInt;
+    // const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool;
+    // const FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0: <Self::Fp as PrimeField>::BigInt;
     type Fp: PrimeField + SquareRootField + Into<<Self::Fp as PrimeField>::BigInt>;
     type Fp3Params: Fp3Parameters<Fp = Self::Fp>;
     type Fp6Params: Fp6Parameters<Fp3Params = Self::Fp3Params>;
@@ -157,50 +159,147 @@ impl<P: BW6Parameters> BW6<P> {
         f
     }
 
-    pub fn final_exponentiation(value: &Fp6<P::Fp6Params>) -> GT<P::Fp6Params> {
-        let value_inv = value.inverse().unwrap();
-        let value_to_first_chunk = Self::final_exponentiation_first_chunk(value, &value_inv);
-        let value_inv_to_first_chunk = Self::final_exponentiation_first_chunk(&value_inv, value);
-        Self::final_exponentiation_last_chunk(&value_to_first_chunk, &value_inv_to_first_chunk)
+    fn exp_by_x(mut f: Fp6<P::Fp6Params>) -> Fp6<P::Fp6Params> {
+        f = f.cyclotomic_exp(&P::X);
+        if P::X_IS_NEGATIVE {
+            f.conjugate();
+        }
+        f
+    }
+
+    pub fn final_exponentiation(f: &Fp6<P::Fp6Params>) -> Fp6<P::Fp6Params> {
+        // final_exponent = (q^6-1)/r
+        //                = (q^3-1)*(q+1) * (q^2-q+1)/r
+        //                =    easy_part  *  hard_part
+
+        let f_inv = f.inverse().unwrap();
+        let f_to_first_chunk = Self::final_exponentiation_first_chunk(f, &f_inv);
+        Self::final_exponentiation_last_chunk(&f_to_first_chunk)
     }
 
     fn final_exponentiation_first_chunk(
-        elt: &Fp6<P::Fp6Params>,
-        elt_inv: &Fp6<P::Fp6Params>,
+        f: &Fp6<P::Fp6Params>,
+        f_inv: &Fp6<P::Fp6Params>,
     ) -> Fp6<P::Fp6Params> {
         // (q^3-1)*(q+1)
 
-        // elt_q3 = elt^(q^3)
-        let mut elt_q3 = elt.clone();
-        elt_q3.frobenius_map(3);
-        // elt_q3_over_elt = elt^(q^3-1)
-        let elt_q3_over_elt = elt_q3 * elt_inv;
-        // alpha = elt^((q^3-1) * q)
-        let mut alpha = elt_q3_over_elt.clone();
+        // f_q3 = f^(q^3)
+        let mut f_q3 = f.clone();
+        f_q3.frobenius_map(3);
+        // f_q3_over_f = f^(q^3-1)
+        let f_q3_over_f = f_q3 * f_inv;
+        // alpha = f^((q^3-1) * q)
+        let mut alpha = f_q3_over_f.clone();
         alpha.frobenius_map(1);
-        // beta = elt^((q^3-1)*(q+1)
-        alpha * &elt_q3_over_elt
+        // beta = f^((q^3-1)*(q+1)
+        alpha * &f_q3_over_f
     }
 
-    fn final_exponentiation_last_chunk(
-        elt: &Fp6<P::Fp6Params>,
-        elt_inv: &Fp6<P::Fp6Params>,
-    ) -> Fp6<P::Fp6Params> {
-        let elt_clone = elt.clone();
-        let elt_inv_clone = elt_inv.clone();
+    fn final_exponentiation_last_chunk(f: &Fp6<P::Fp6Params>) -> Fp6<P::Fp6Params> {
+        // hard_part
+        // From https://eprint.iacr.org/2020/351.pdf, Alg.6
+        // R0(x) := (-103*x^7 + 70*x^6 + 269*x^5 - 197*x^4 - 314*x^3 - 73*x^2 - 263*x - 220)
+        // R1(x) := (103*x^9 - 276*x^8 + 77*x^7 + 492*x^6 - 445*x^5 - 65*x^4 + 452*x^3 - 181*x^2 + 34*x + 229)
+        // f ^ R0(u) * (f ^ q) ^ R1(u) in a 2-NAF multi-exp fashion.
 
-        let mut elt_q = elt.clone();
-        elt_q.frobenius_map(1);
+        // steps 1,2,3
+        let f0 = f.clone();
+        let mut f0p = f0;
+        f0p.frobenius_map(1);
+        let f1 = Self::exp_by_x(f0);
+        let mut f1p = f1;
+        f1p.frobenius_map(1);
+        let f2 = Self::exp_by_x(f1);
+        let mut f2p = f2;
+        f2p.frobenius_map(1);
+        let f3 = Self::exp_by_x(f2);
+        let mut f3p = f3;
+        f3p.frobenius_map(1);
+        let f4 = Self::exp_by_x(f3);
+        let mut f4p = f4;
+        f4p.frobenius_map(1);
+        let f5 = Self::exp_by_x(f4);
+        let mut f5p = f5;
+        f5p.frobenius_map(1);
+        let f6 = Self::exp_by_x(f5);
+        let mut f6p = f6;
+        f6p.frobenius_map(1);
+        let f7 = Self::exp_by_x(f6);
+        let mut f7p = f7;
+        f7p.frobenius_map(1);
 
-        let w1_part = elt_q.cyclotomic_exp(&P::FINAL_EXPONENT_LAST_CHUNK_1);
-        let w0_part;
-        if P::FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG {
-            w0_part = elt_inv_clone.cyclotomic_exp(&P::FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0);
-        } else {
-            w0_part = elt_clone.cyclotomic_exp(&P::FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0);
-        }
+        // step 4
+        let f8p = Self::exp_by_x(f7p);
+        let f9p = Self::exp_by_x(f8p);
 
-        w1_part * &w0_part
+        // step 5
+        let mut f5p_p3 = f5p;
+        f5p_p3.frobenius_map(3);
+        let result1 = f3p * &f6p * &f5p_p3;
+
+        // step 6
+        // TODO: cyclotomic_square?
+        let result2 = result1.square();
+        let f4_2p = f4 * &f2p;
+        let mut tmp1_p3 = f0 * &f1 * &f3 * &f4_2p * &f8p;
+        tmp1_p3.frobenius_map(3);
+        let result3 = result2 * &f5 * &f0p * &tmp1_p3;
+
+        // step 7
+        let result4 = result3.square();
+        let mut f7_p3 = f7;
+        f7_p3.frobenius_map(3);
+        let result5 = result4 * &f9p * &f7_p3;
+
+        // step 8
+        let result6 = result5.square();
+        let f2_4p = f2 * &f4p;
+        let f4_2p_5p = f4_2p * &f5p;
+        let mut tmp2_p3 = f2_4p * &f3 * &f3p;
+        tmp2_p3.frobenius_map(3);
+        let result7 = result6 * &f4_2p_5p * &f6 * &f7p * &tmp2_p3;
+
+        // step 9
+        let result8 = result7.square();
+        let mut tmp3_p3 = f0p * &f9p;
+        tmp3_p3.frobenius_map(3);
+        let result9 = result8 * &f0 * &f7 * &f1p * &tmp3_p3;
+
+        // step 10
+        let result10 = result9.square();
+        let f6p_8p = f6p * &f8p;
+        let f5_7p = f5 * &f7p;
+        let mut tmp4_p3 = f6p_8p;
+        tmp4_p3.frobenius_map(3);
+        let result11 = result10 * &f5_7p * &f2p * &tmp4_p3;
+
+        // step 11
+        let result12 = result11.square();
+        let f3_6 = f3 * &f6;
+        let f1_7 = f1 * &f7;
+        let mut tmp5_p3 = f1_7 * &f2;
+        tmp5_p3.frobenius_map(3);
+        let result13 = result12 * &f3_6 * &f9p * &tmp5_p3;
+
+        // step 12
+        let result14 = result13.square();
+        let mut tmp6_p3 = f4_2p * &f5_7p * &f6p_8p;
+        tmp6_p3.frobenius_map(3);
+        let result15 = result14 * &f0 * &f0p * &f3p * &f5p * &tmp6_p3;
+
+        // step 13
+        let result16 = result15.square();
+        let mut tmp7_p3 = f3_6;
+        tmp7_p3.frobenius_map(3);
+        let result17 = result16 * &f1p * &tmp7_p3;
+
+        // step 14
+        let result18 = result17.square();
+        let mut tmp8_p3 = f2_4p * &f4_2p_5p * &f9p;
+        tmp8_p3.frobenius_map(3);
+        let result19 = result18 * &f1_7 * &f5_7p * &f0p * &tmp8_p3;
+
+        result19
     }
 }
 

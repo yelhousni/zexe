@@ -27,6 +27,9 @@ pub type BW6_761 = BW6<Parameters>;
 pub struct Parameters;
 
 impl BW6Parameters for Parameters {
+    const X: BigInteger768 = BigInteger768([0x8508c00000000001, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
+    /// `x` is positive.
+    const X_IS_NEGATIVE: bool = false;
     const TWIST: Fp3<Self::Fp3Params> = field_new!(Fq3, FQ_ZERO, FQ_ONE, FQ_ZERO);
     // A coefficient of BW6-761 G2 =
     // ```
@@ -49,6 +52,7 @@ impl BW6Parameters for Parameters {
         1574278065184431084,
     ];
     const ATE_IS_LOOP_COUNT_NEG: bool = false;
+    /*
     const FINAL_EXPONENT_LAST_CHUNK_1: BigInteger768 = BigInteger768([
         0x3de5800000000089,
         0x832ba4061000003b,
@@ -78,6 +82,7 @@ impl BW6Parameters for Parameters {
         0x68f6427062e1b0b,
         0x0,
     ]);
+    */
     type Fp = Fq;
     type Fp3Params = Fq3Parameters;
     type Fp6Params = Fq6Parameters;
