@@ -74,3 +74,25 @@ fn test_bilinearity() {
     assert_eq!(ans2.pow(Fr::characteristic()), Fq6::one());
     assert_eq!(ans3.pow(Fr::characteristic()), Fq6::one());
 }
+
+#[test]
+fn test_final_exp() {
+    let mut a: Fq6 = Fq6::one();
+
+    a.c0.c0 = Fq::one().double();
+    a.c0.c1 = Fq::one().double();
+    a.c0.c2 = Fq::one().double();
+    a.c1.c0 = Fq::one().double();
+    a.c1.c1 = Fq::one().double();
+    a.c1.c2 = Fq::one().double();
+
+    let ans = BW6_761::final_exponentiation(&a);
+
+    assert_ne!(a, Fq6::one());
+    assert_ne!(ans, Fq6::one());
+
+    assert_eq!(ans.pow(Fr::characteristic()), Fq6::one());
+
+    println!("a: {}", a);
+    println!("ans: {}", ans);
+}
