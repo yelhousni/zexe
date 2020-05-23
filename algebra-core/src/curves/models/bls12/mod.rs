@@ -23,6 +23,7 @@ pub trait Bls12Parameters: 'static {
     const X: &'static [u64];
     const X_IS_NEGATIVE: bool;
     const TWIST_TYPE: TwistType;
+    const TWIST: Fp2<Self::Fp2Params>;
     type Fp: PrimeField + SquareRootField + Into<<Self::Fp as PrimeField>::BigInt>;
     type Fp2Params: Fp2Parameters<Fp = Self::Fp>;
     type Fp6Params: Fp6Parameters<Fp2Params = Self::Fp2Params>;
@@ -53,7 +54,7 @@ impl<P: Bls12Parameters> Bls12<P> {
         coeffs: &(Fp2<P::Fp2Params>, Fp2<P::Fp2Params>, Fp2<P::Fp2Params>),
         p: &G1Affine<P>,
     ) {
-        let mut c0 = coeffs.0;
+        let c0 = coeffs.0;
         let mut c1 = coeffs.1;
         let mut c2 = coeffs.2;
 
@@ -61,12 +62,12 @@ impl<P: Bls12Parameters> Bls12<P> {
             TwistType::M => {
                 c2.mul_assign_by_fp(&p.y);
                 c1.mul_assign_by_fp(&p.x);
-                f.mul_by_014(&c0, &c1, &c2);
+                f.mul_by_045(&c0, &c1, &c2);
             }
             TwistType::D => {
-                c0.mul_assign_by_fp(&p.y);
+                c2.mul_assign_by_fp(&p.y);
                 c1.mul_assign_by_fp(&p.x);
-                f.mul_by_034(&c0, &c1, &c2);
+                f.mul_by_024(&c0, &c1, &c2);
             }
         }
     }

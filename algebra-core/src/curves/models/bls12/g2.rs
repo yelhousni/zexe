@@ -119,8 +119,9 @@ fn doubling_step<B: Bls12Parameters>(
     r.y = g.square() - &(e_square.double() + &e_square);
     r.z = b * &h;
     match B::TWIST_TYPE {
-        TwistType::M => (i, j.double() + &j, -h),
-        TwistType::D => (-h, j.double() + &j, i),
+        // (ell_0, ell_VV * xP, ell_VW * yP)
+        TwistType::D => (B::TWIST * &i, j.double() + &j, -h),
+        TwistType::M => (i, j.double() + &j, B::TWIST * &(-h)),
     }
 }
 
@@ -144,7 +145,8 @@ fn addition_step<B: Bls12Parameters>(
     let j = theta * &q.x - &(lambda * &q.y);
 
     match B::TWIST_TYPE {
-        TwistType::M => (j, -theta, lambda),
-        TwistType::D => (lambda, -theta, j),
+        // (ell_0, ell_VV * xP, ell_VW * yP)
+        TwistType::D => (B::TWIST * &j, -theta, lambda),
+        TwistType::M => (j, -theta, B::TWIST * &lambda),
     }
 }

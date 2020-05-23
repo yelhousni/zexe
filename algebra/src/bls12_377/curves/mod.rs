@@ -1,7 +1,10 @@
 use crate::bls12_377::*;
-use algebra_core::curves::{
+use algebra_core::{
+    biginteger::BigInteger384,
+    field_new,
+    curves::{
     bls12,
-    bls12::{Bls12, Bls12Parameters, TwistType},
+    bls12::{Bls12, Bls12Parameters, TwistType}}
 };
 
 pub mod g1;
@@ -17,6 +20,17 @@ impl Bls12Parameters for Parameters {
     /// `x` is positive.
     const X_IS_NEGATIVE: bool = false;
     const TWIST_TYPE: TwistType = TwistType::D;
+    const TWIST: Fq2 = field_new!(Fq2,
+        field_new!(Fq, BigInteger384([0, 0, 0, 0, 0, 0])),
+        field_new!(Fq, BigInteger384([
+            202099033278250856u64,
+            5854854902718660529u64,
+            11492539364873682930u64,
+            8885205928937022213u64,
+            5545221690922665192u64,
+            39800542322357402u64,
+        ])),
+    );
     type Fp = Fq;
     type Fp2Params = Fq2Parameters;
     type Fp6Params = Fq6Parameters;

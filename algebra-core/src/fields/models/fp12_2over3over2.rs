@@ -80,6 +80,29 @@ impl<P: Fp12Parameters> Fp12<P> {
         self.c1 = self.c1.neg();
     }
 
+    pub fn mul_by_045(
+        &mut self,
+        c0: &Fp2<Fp2Params<P>>,
+        c4: &Fp2<Fp2Params<P>>,
+        c5: &Fp2<Fp2Params<P>>,
+    ) {
+        let zero = Fp2::zero();
+        let a = Fp12::new(Fp6::new(*c5, zero, zero), Fp6::new(zero, *c0, *c4));
+
+        self.mul_assign(a);
+    }
+    pub fn mul_by_024(
+        &mut self,
+        c0: &Fp2<Fp2Params<P>>,
+        c2: &Fp2<Fp2Params<P>>,
+        c4: &Fp2<Fp2Params<P>>,
+    ) {
+        let zero = Fp2::zero();
+        let a = Fp12::new(Fp6::new(*c0, zero, *c2), Fp6::new(zero, *c4, zero));
+
+        self.mul_assign(a);
+    }
+
     pub fn mul_by_034(
         &mut self,
         c0: &Fp2<Fp2Params<P>>,
