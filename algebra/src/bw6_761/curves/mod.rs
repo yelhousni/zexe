@@ -30,51 +30,20 @@ impl BW6Parameters for Parameters {
         0x15d8f58f3501dbec,
     ];
     const ATE_LOOP_COUNT_IS_NEGATIVE: bool = false;
-    /*
-    const FINAL_EXPONENT_LAST_CHUNK_1: BigInteger = BigInteger([
-        0x3de5800000000089,
-        0x832ba4061000003b,
-        0xc61c554757551c0c,
-        0xc856a0853c9db94c,
-        0x2c77d5ac34cb12ef,
-        0xad1972339049ce76,
-        0x0,
-        0x0,
-        0x0,
-        0x0,
-        0x0,
-        0x0,
-    ]);
-    const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool = false;
-    const FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0: BigInteger = BigInteger([
-        0x6f9440000000008c,
-        0x1aff40fcf0000082,
-        0x9521646d73808c51,
-        0x3ba806d298c79fc5,
-        0xb521a3d9309c6dd0,
-        0x824cd7cfb1e8685a,
-        0xa7f6ef02c228c497,
-        0xa311dc0a5ef6ff10,
-        0x96a147eaf584608d,
-        0x828e2c6f9f4f1494,
-        0x68f6427062e1b0b,
-        0x0,
-    ]);
-    */
-    const TWIST_TYPE: TwistType = TwistType::D;
+    const TWIST_TYPE: TwistType = TwistType::M;
     const TWIST: Fq = field_new!(Fq, BigInteger([
-        0x0405ffffffff0baa,
-        0xb4b04c6b1fff19ce,
-        0x3d32dc8704ff55bc,
-        0xb4d5fe641dc8fbe9,
-        0xd9d3967c3b297017,
-        0x81cccf44a4904817,
-        0x4e9b4b7fb95a720b,
-        0x46a5cffc8c5e4207,
-        0xf6acb100116390f8,
-        0x8b0914c7ce22045e,
-        0xaf503d773ecb53be,
-        0xa3eefde24fd0fb,
+        0xe12e00000001e9c2,
+        0x63c1e3faa001cd69,
+        0xb1b4384fcbe29cf6,
+        0xc79630bc713d5a1d,
+        0x30127ac071851e2d,
+        0x0979f350dcd36af1,
+        0x6a66defed8b361f2,
+        0x53abac78b24d4e23,
+        0xb7ab89dede485a92,
+        0x5c3a0745675e8452,
+        0x446f17918c5f5700,
+        0xfdf24e3267fa1e,
     ]));
     type Fp = Fq;
     type Fp3Params = Fq3Parameters;
