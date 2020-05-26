@@ -32,6 +32,7 @@ impl BW6Parameters for Parameters {
     ];
     const ATE_LOOP_COUNT_2_IS_NEGATIVE: bool = false;
     const TWIST_TYPE: TwistType = TwistType::D;
+    // TWIST = -4
     const TWIST: Fq = field_new!(Fq, BigInteger([
         0x0405ffffffff0baa,
         0xb4b04c6b1fff19ce,

@@ -266,22 +266,18 @@ impl<P: BW6Parameters> PairingEngine for BW6<P> {
         }
 
         // f_{u+1,Q}(P)
-        println!("1 ML");
         let mut f_1 = Self::Fqk::one();
 
         for i in BitIterator::new(P::ATE_LOOP_COUNT_1).skip(1) {
             f_1.square_in_place();
-            println!("sq");
 
             for (p, ref mut coeffs) in &mut pairs_1 {
                 Self::ell(&mut f_1, coeffs.next().unwrap(), &p.0);
-                println!("mul");
             }
 
             if i {
                 for &mut (p, ref mut coeffs) in &mut pairs_1 {
                     Self::ell(&mut f_1, coeffs.next().unwrap(), &p.0);
-                    println!("mul");
                 }
             }
         }
@@ -291,22 +287,18 @@ impl<P: BW6Parameters> PairingEngine for BW6<P> {
         }
 
         // f_{u^2-u^2-u,Q}(P)
-        println!("2 ML");
         let mut f_2 = Self::Fqk::one();
 
         for j in BitIterator::new(P::ATE_LOOP_COUNT_2).skip(3) {
             f_2.square_in_place();
-            println!("sq");
 
             for (p, ref mut coeffs) in &mut pairs_2 {
                 Self::ell(&mut f_2, coeffs.next().unwrap(), &p.0);
-                println!("mul");
             }
 
             if j {
                 for &mut (p, ref mut coeffs) in &mut pairs_2 {
                     Self::ell(&mut f_2, coeffs.next().unwrap(), &p.0);
-                    println!("mul");
                 }
             }
         }
@@ -316,7 +308,6 @@ impl<P: BW6Parameters> PairingEngine for BW6<P> {
         }
 
         f_2.frobenius_map(1);
-        println!("frob");
 
         f_1 * &f_2
     }
