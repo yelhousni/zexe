@@ -26,6 +26,7 @@ pub trait BW6Parameters: 'static {
     const ATE_LOOP_COUNT_2: &'static [u64];
     const ATE_LOOP_COUNT_2_IS_NEGATIVE: bool;
     const TWIST_TYPE: TwistType;
+    const TWIST: Self::Fp;
     type Fp: PrimeField + SquareRootField + Into<<Self::Fp as PrimeField>::BigInt>;
     type Fp3Params: Fp3Parameters<Fp = Self::Fp>;
     type Fp6Params: Fp6Parameters<Fp3Params = Self::Fp3Params>;
@@ -55,7 +56,7 @@ impl<P: BW6Parameters> BW6<P> {
         coeffs: &(P::Fp, P::Fp, P::Fp),
         p: &G1Affine<P>,
     ) {
-        let mut c0 = coeffs.0;
+        let c0 = coeffs.0;
         let mut c1 = coeffs.1;
         let mut c2 = coeffs.2;
 
@@ -63,12 +64,12 @@ impl<P: BW6Parameters> BW6<P> {
             TwistType::M => {
                 c2 *= &p.y;
                 c1 *= &p.x;
-                f.mul_by_014(&c0, &c1, &c2);
+                f.mul_by_045(&c0, &c1, &c2);
             }
             TwistType::D => {
-                c0 *= &p.y;
+                c2 *= &p.y;
                 c1 *= &p.x;
-                f.mul_by_034(&c0, &c1, &c2);
+                f.mul_by_024(&c0, &c1, &c2);
             }
         }
     }
@@ -240,18 +241,22 @@ impl<P: BW6Parameters> PairingEngine for BW6<P> {
         }
 
         // f_{u+1,Q}(P)
+        println!("1 ML");
         let mut f_1 = Self::Fqk::one();
 
         for i in BitIterator::new(P::ATE_LOOP_COUNT_1).skip(1) {
             f_1.square_in_place();
+            println!("sq");
 
             for (p, ref mut coeffs) in &mut pairs_1 {
                 Self::ell(&mut f_1, coeffs.next().unwrap(), &p.0);
+                println!("mul");
             }
 
             if i {
                 for &mut (p, ref mut coeffs) in &mut pairs_1 {
                     Self::ell(&mut f_1, coeffs.next().unwrap(), &p.0);
+                    println!("mul");
                 }
             }
         }
@@ -261,18 +266,22 @@ impl<P: BW6Parameters> PairingEngine for BW6<P> {
         }
 
         // f_{u^2-u^2-u,Q}(P)
+        println!("2 ML");
         let mut f_2 = Self::Fqk::one();
 
         for j in BitIterator::new(P::ATE_LOOP_COUNT_2).skip(3) {
             f_2.square_in_place();
+            println!("sq");
 
             for (p, ref mut coeffs) in &mut pairs_2 {
                 Self::ell(&mut f_2, coeffs.next().unwrap(), &p.0);
+                println!("mul");
             }
 
             if j {
                 for &mut (p, ref mut coeffs) in &mut pairs_2 {
                     Self::ell(&mut f_2, coeffs.next().unwrap(), &p.0);
+                    println!("mul");
                 }
             }
         }
@@ -282,6 +291,7 @@ impl<P: BW6Parameters> PairingEngine for BW6<P> {
         }
 
         f_2.frobenius_map(1);
+        println!("frob");
 
         f_1 * &f_2
     }
