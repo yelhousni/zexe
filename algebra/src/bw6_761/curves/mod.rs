@@ -20,16 +20,15 @@ impl BW6Parameters for Parameters {
     const X: BigInteger = BigInteger([0x8508c00000000001, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
     /// `x` is positive.
     const X_IS_NEGATIVE: bool = false;
-    // X+1
-    const ATE_LOOP_COUNT_1: &'static [u64] = &[0x8508c00000000002];
-    const ATE_LOOP_COUNT_1_IS_NEGATIVE: bool = false;
-    // X^3-X^2-X
-    const ATE_LOOP_COUNT_2: &'static [u64] = &[
-        0xffffffffffffffff,
-        0x8a442f991fffffff,
-        0x23ed1347970dec00,
+    const ATE_LOOP_COUNT: &'static [u64] = &[
+        0x467a80000000000f,
+        0x70b5d44300000007,
+        0x58490fb409869401,
+        0xb55fc0d440cb48f0,
+        0x1ab2f9cb6145aeec,
+        0x15d8f58f3501dbec,
     ];
-    const ATE_LOOP_COUNT_2_IS_NEGATIVE: bool = false;
+    const ATE_LOOP_COUNT_IS_NEGATIVE: bool = false;
     const TWIST_TYPE: TwistType = TwistType::M;
     type Fp = Fq;
     type Fp3Params = Fq3Parameters;
