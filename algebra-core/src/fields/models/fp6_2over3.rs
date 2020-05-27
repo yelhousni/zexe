@@ -74,10 +74,8 @@ impl<P: Fp6Parameters> Fp6<P> {
         c2: &<P::Fp3Params as Fp3Parameters>::Fp,
         c4: &<P::Fp3Params as Fp3Parameters>::Fp,
     ) {
-        let mut a = Fp6::zero();
-        a.c0.c0 = *c0;
-        a.c0.c2 = *c2;
-        a.c1.c1 = *c4;
+        let zero = <P::Fp3Params as Fp3Parameters>::Fp::zero();
+        let a = Fp6::new(Fp3::new(*c0, zero, *c2), Fp3::new(zero, *c4, zero));
 
         self.mul_assign(a);
     }
@@ -90,10 +88,8 @@ impl<P: Fp6Parameters> Fp6<P> {
         c5: &<P::Fp3Params as Fp3Parameters>::Fp,
 
     ) {
-        let mut a = Fp6::zero();
-        a.c0.c0 = *c0;
-        a.c1.c1 = *c4;
-        a.c1.c2 = *c5;
+        let zero = <P::Fp3Params as Fp3Parameters>::Fp::zero();
+        let a = Fp6::new(Fp3::new(*c5, zero, zero), Fp3::new(zero, *c0, *c4));
 
         self.mul_assign(a);
     }
@@ -106,10 +102,8 @@ impl<P: Fp6Parameters> Fp6<P> {
         c3: &<P::Fp3Params as Fp3Parameters>::Fp,
         c4: &<P::Fp3Params as Fp3Parameters>::Fp,
     ) {
-        let mut a = Fp6::zero();
-        a.c0.c0 = *c0;
-        a.c1.c0 = *c3;
-        a.c1.c1 = *c4;
+        let zero = <P::Fp3Params as Fp3Parameters>::Fp::zero();
+        let a = Fp6::new(Fp3::new(*c0, zero, zero), Fp3::new(*c3, *c4, zero));
 
         self.mul_assign(a);
     }
@@ -122,10 +116,8 @@ impl<P: Fp6Parameters> Fp6<P> {
         c4: &<P::Fp3Params as Fp3Parameters>::Fp,
 
     ) {
-        let mut a = Fp6::zero();
-        a.c0.c0 = *c0;
-        a.c0.c1 = *c1;
-        a.c1.c1 = *c4;
+        let zero = <P::Fp3Params as Fp3Parameters>::Fp::zero();
+        let a = Fp6::new(Fp3::new(*c0, *c1, zero), Fp3::new(zero, *c4, zero));
 
         self.mul_assign(a);
     }
