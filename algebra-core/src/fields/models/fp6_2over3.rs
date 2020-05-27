@@ -158,7 +158,7 @@ impl<P: Fp6Parameters> Fp6<P> {
 
         // For z.a_.c_ = z2
         let t0 = *x0 + x2;
-        let t3 = t1 * &t0 - &(d0 - &d2);
+        let t3 = t1 * &t0 - &(d0 + &d2);
         let t4 = z3 * &x4;
         let s1 = s1 + &t4;
         let t3 = t3 + &t4;
@@ -167,7 +167,7 @@ impl<P: Fp6Parameters> Fp6<P> {
         let t0 = z2 + &z4;
         let z2 = t3;
         let t1 = *x2 + x4;
-        let t3 = t0 * &t1 - &(d2 - &d4);
+        let t3 = t0 * &t1 - &(d2 + &d4);
         let mut t4 = t3;
         t4.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
         let t3 = z3 * &x0;
@@ -181,7 +181,7 @@ impl<P: Fp6Parameters> Fp6<P> {
         let mut t4 = t3;
         t4.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
         let t0 = *x0 + x4;
-        let t3 = t2 * &t0 - &(d0 - &d4);
+        let t3 = t2 * &t0 - &(d0 + &d4);
         let t4 = t4 + &t3;
         let z4 = t4;
 
