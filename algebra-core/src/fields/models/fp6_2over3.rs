@@ -93,37 +93,6 @@ impl<P: Fp6Parameters> Fp6<P> {
         self.mul_assign(a);
     }
 
-    // TODO: Optimize manually
-    pub fn mul_by_034(
-        &mut self,
-        c0: &<P::Fp3Params as Fp3Parameters>::Fp,
-        c3: &<P::Fp3Params as Fp3Parameters>::Fp,
-        c4: &<P::Fp3Params as Fp3Parameters>::Fp,
-    ) {
-        let mut a = Fp6::zero();
-        a.c0.c0 = *c0;
-        a.c1.c0 = *c3;
-        a.c1.c1 = *c4;
-
-        self.mul_assign(a);
-    }
-
-    // TODO: Optimize manually
-    pub fn mul_by_014(
-        &mut self,
-        c0: &<P::Fp3Params as Fp3Parameters>::Fp,
-        c1: &<P::Fp3Params as Fp3Parameters>::Fp,
-        c4: &<P::Fp3Params as Fp3Parameters>::Fp,
-
-    ) {
-        let mut a = Fp6::zero();
-        a.c0.c0 = *c0;
-        a.c0.c1 = *c1;
-        a.c1.c1 = *c4;
-
-        self.mul_assign(a);
-    }
-
     /// Multiply by quadratic nonresidue v.
     pub fn mul_by_nonresidue(value: &Fp3<P::Fp3Params>) -> Fp3<P::Fp3Params> {
         let mut res = *value;

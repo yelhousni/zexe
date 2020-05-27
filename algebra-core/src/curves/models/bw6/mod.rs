@@ -23,11 +23,6 @@ pub trait BW6Parameters: 'static {
     const X_IS_NEGATIVE: bool;
     const ATE_LOOP_COUNT: &'static [u64];
     const ATE_LOOP_COUNT_IS_NEGATIVE: bool;
-    /*
-    const FINAL_EXPONENT_LAST_CHUNK_1: <Self::Fp as PrimeField>::BigInt;
-    const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool;
-    const FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0: <Self::Fp as PrimeField>::BigInt;
-    */
     const TWIST_TYPE: TwistType;
     const TWIST: Self::Fp;
     type Fp: PrimeField + SquareRootField + Into<<Self::Fp as PrimeField>::BigInt>;
