@@ -67,30 +67,135 @@ impl<P: Fp6Parameters> Fp6<P> {
         self.c1 = self.c1.neg();
     }
 
-    // TODO: Optimize manually
     pub fn mul_by_045(
         &mut self,
         c0: &<P::Fp3Params as Fp3Parameters>::Fp,
         c4: &<P::Fp3Params as Fp3Parameters>::Fp,
         c5: &<P::Fp3Params as Fp3Parameters>::Fp,
     ) {
+        /*
+         * OLD: naive mul
         let zero = <P::Fp3Params as Fp3Parameters>::Fp::zero();
         let a = Fp6::new(Fp3::new(*c5, zero, zero), Fp3::new(zero, *c0, *c4));
 
         self.mul_assign(a);
+        */
+
+        let z0 = self.c0.c0;
+        let z1 = self.c0.c1;
+        let z2 = self.c0.c2;
+        let z3 = self.c1.c0;
+        let z4 = self.c1.c1;
+        let z5 = self.c1.c2;
+
+        let x0 = *c5;
+        let x4 = *c0;
+        let x5 = *c4;
+
+        let mut tmp1 = x4;
+        tmp1.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
+        let mut tmp2 = x5;
+        tmp2.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
+
+        self.c0.c0 = x0 * &z0 + &(tmp1 * &z4) + &(tmp2 * &z3);
+        self.c0.c1 = x0 * &z1 + &(tmp1 * &z5) + &(tmp2 * &z4);
+        self.c0.c2 = x0 * &z2 + &(x4 * &z3) + &(tmp2 * &z5);
+        self.c1.c0 = x0 * &z3 + &(tmp1 * &z2) + &(tmp2 * &z1);
+        self.c1.c1 = x0 * &z4 + &(x4 * &z0) + &(tmp2 * &z2);
+        self.c1.c2 = x0 * &z5 + &(x4 * &z1) + &(x5 * &z0);
     }
 
-    // TODO: Optimize manually
     pub fn mul_by_024(
         &mut self,
         c0: &<P::Fp3Params as Fp3Parameters>::Fp,
         c2: &<P::Fp3Params as Fp3Parameters>::Fp,
         c4: &<P::Fp3Params as Fp3Parameters>::Fp,
     ) {
+        /*
+         * OLD: naive mul
         let zero = <P::Fp3Params as Fp3Parameters>::Fp::zero();
         let a = Fp6::new(Fp3::new(*c0, zero, *c2), Fp3::new(zero, *c4, zero));
 
         self.mul_assign(a);
+        */
+
+        let z0 = self.c0.c0;
+        let z1 = self.c0.c1;
+        let z2 = self.c0.c2;
+        let z3 = self.c1.c0;
+        let z4 = self.c1.c1;
+        let z5 = self.c1.c2;
+
+        let x0 = c0;
+        let x2 = c2;
+        let x4 = c4;
+
+        let d0 = z0 * &x0;
+        let d2 = z2 * &x2;
+        let d4 = z4 * &x4;
+        let t2 = z0 + &z4;
+        let t1 = z0 + &z2;
+        let s0 = z1 + &(z3 + &z5);
+
+        // For z.a_.a_ = z0.
+        let s1 = z1 * &x2;
+        let t3 = s1 + &d4;
+        let mut t3_nr = t3;
+        t3_nr.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
+        let t4 = t3_nr + &d0;
+        let z0 = t4;
+
+        // For z.a_.b_ = z1
+        let t3 = z5 * &x4;
+        let s1 = s1 + &t3;
+        let t3 = t3 + &d2;
+        let mut t4 = t3;
+        t4.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
+        let t3 = z1 * &x0;
+        let s1 = s1 + &t3;
+        let t4 = t4 + &t3;
+        let z1 = t4;
+
+        // For z.a_.c_ = z2
+        let t0 = *x0 + x2;
+        let t3 = t1 * &t0 - &(d0 + &d2);
+        let t4 = z3 * &x4;
+        let s1 = s1 + &t4;
+        let t3 = t3 + &t4;
+
+        // For z.b_.a_ = z3 (z3 needs z2)
+        let t0 = z2 + &z4;
+        let z2 = t3;
+        let t1 = *x2 + x4;
+        let t3 = t0 * &t1 - &(d2 + &d4);
+        let mut t4 = t3;
+        t4.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
+        let t3 = z3 * &x0;
+        let s1 = s1 + &t3;
+        let t4 = t4 + &t3;
+        let z3 = t4;
+
+        // For z.b_.b_ = z4
+        let t3 = z5 * &x2;
+        let s1 = s1 + &t3;
+        let mut t4 = t3;
+        t4.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
+        let t0 = *x0 + x4;
+        let t3 = t2 * &t0 - &(d0 + &d4);
+        let t4 = t4 + &t3;
+        let z4 = t4;
+
+        // For z.b_.c_ = z5.
+        let t0 = *x0 + x2 + x4;
+        let t3 = s0 * &t0 - &s1;
+        let z5 = t3;
+
+        self.c0.c0 = z0;
+        self.c0.c1 = z1;
+        self.c0.c2 = z2;
+        self.c1.c0 = z3;
+        self.c1.c1 = z4;
+        self.c1.c2 = z5;
     }
 
     /// Multiply by quadratic nonresidue v.
