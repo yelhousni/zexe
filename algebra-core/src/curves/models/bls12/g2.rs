@@ -60,7 +60,6 @@ impl<P: Bls12Parameters> ToBytes for G2Prepared<P> {
 
 impl<P: Bls12Parameters> From<G2Affine<P>> for G2Prepared<P> {
     fn from(q: G2Affine<P>) -> Self {
-        let two_inv = P::Fp::one().double().inverse().unwrap();
         if q.is_zero() {
             return Self {
                 ell_coeffs: vec![],
@@ -76,7 +75,7 @@ impl<P: Bls12Parameters> From<G2Affine<P>> for G2Prepared<P> {
         };
 
         for i in BitIterator::new(P::X).skip(1) {
-            ell_coeffs.push(doubling_step::<P>(&mut r, &two_inv));
+            ell_coeffs.push(doubling_step::<P>(&mut r));
 
             if i {
                 ell_coeffs.push(addition_step::<P>(&mut r, &q));
@@ -96,28 +95,26 @@ impl<P: Bls12Parameters> G2Prepared<P> {
 }
 
 fn doubling_step<B: Bls12Parameters>(
-    r: &mut G2HomProjective<B>,
-    two_inv: &B::Fp,
+    r: &mut G2HomProjective<B>
 ) -> (Fp2<B::Fp2Params>, Fp2<B::Fp2Params>, Fp2<B::Fp2Params>) {
     // Formula for line function when working with
     // homogeneous projective coordinates.
 
-    let mut a = r.x * &r.y;
-    a.mul_assign_by_fp(two_inv);
+    let a = r.x * &r.y;
     let b = r.y.square();
+    let b4 = b.double().double();
     let c = r.z.square();
     let e = B::G2Parameters::COEFF_B * &(c.double() + &c);
     let f = e.double() + &e;
-    let mut g = b + &f;
-    g.mul_assign_by_fp(two_inv);
+    let g = b + &f;
     let h = (r.y + &r.z).square() - &(b + &c);
     let i = e - &b;
     let j = r.x.square();
-    let e_square = e.square();
+    let e2_square = e.double().square();
 
-    r.x = a * &(b - &f);
-    r.y = g.square() - &(e_square.double() + &e_square);
-    r.z = b * &h;
+    r.x = a.double() * &(b - &f);
+    r.y = g.square() - &(e2_square.double() + &e2_square);
+    r.z = b4 * &h;
     match B::TWIST_TYPE {
         // (ell_0, ell_VV * xP, ell_VW * yP)
         TwistType::D => (B::TWIST * &i, j.double() + &j, -h),
