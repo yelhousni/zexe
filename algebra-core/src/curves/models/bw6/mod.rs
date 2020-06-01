@@ -6,7 +6,7 @@ use crate::{
     fields::{
         fp3::Fp3Parameters,
         fp6_2over3::{Fp6, Fp6Parameters},
-        BitIterator, Field, PrimeField, SquareRootField,
+        Field, PrimeField, SquareRootField,
     },
 };
 use num_traits::One;
@@ -21,7 +21,7 @@ pub enum TwistType {
 pub trait BW6Parameters: 'static {
     const X: <Self::Fp as PrimeField>::BigInt;
     const X_IS_NEGATIVE: bool;
-    const ATE_LOOP_COUNT: &'static [u64];
+    const ATE_LOOP_COUNT: &'static [i8];
     const ATE_LOOP_COUNT_IS_NEGATIVE: bool;
     const TWIST_TYPE: TwistType;
     type Fp: PrimeField + SquareRootField + Into<<Self::Fp as PrimeField>::BigInt>;
@@ -238,17 +238,29 @@ impl<P: BW6Parameters> PairingEngine for BW6<P> {
 
         let mut f = Self::Fqk::one();
 
-        for i in BitIterator::new(P::ATE_LOOP_COUNT).skip(4) {
-            f.square_in_place();
+        for i in (1..P::ATE_LOOP_COUNT.len()).rev() {
+            if i != P::ATE_LOOP_COUNT.len()-1 {
+                f.square_in_place();
+            }
 
             for (p, ref mut coeffs) in &mut pairs {
                 Self::ell(&mut f, coeffs.next().unwrap(), &p.0);
             }
 
-            if i {
-                for &mut (p, ref mut coeffs) in &mut pairs {
-                    Self::ell(&mut f, coeffs.next().unwrap(), &p.0);
-                }
+            let x = P::ATE_LOOP_COUNT[i-1];
+
+            match x {
+                1 => {
+                    for &mut (p, ref mut coeffs) in &mut pairs {
+                        Self::ell(&mut f, coeffs.next().unwrap(), &p.0);
+                    }
+                },
+                -1 => {
+                    for &mut (p, ref mut coeffs) in &mut pairs {
+                        Self::ell(&mut f, coeffs.next().unwrap(), &p.0);
+                    }
+                },
+                _ => continue,
             }
         }
 

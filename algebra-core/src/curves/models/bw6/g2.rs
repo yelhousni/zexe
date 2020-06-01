@@ -6,11 +6,12 @@ use crate::{
         short_weierstrass_jacobian::{GroupAffine, GroupProjective},
         AffineCurve,
     },
-    fields::{BitIterator, Field},
+    fields::Field,
     io::{Result as IoResult, Write},
     Vec,
 };
 use num_traits::{One, Zero};
+use core::ops::Neg;
 
 pub type G2Affine<P> = GroupAffine<<P as BW6Parameters>::G2Parameters>;
 pub type G2Projective<P> = GroupProjective<<P as BW6Parameters>::G2Parameters>;
@@ -74,11 +75,19 @@ impl<P: BW6Parameters> From<G2Affine<P>> for G2Prepared<P> {
             z: P::Fp::one(),
         };
 
-        for i in BitIterator::new(P::ATE_LOOP_COUNT).skip(4) {
-            ell_coeffs.push(doubling_step::<P>(&mut r));
+        let negq = q.neg();
 
-            if i {
-                ell_coeffs.push(addition_step::<P>(&mut r, &q));
+        for i in (1..P::ATE_LOOP_COUNT.len()).rev() {
+            ell_coeffs.push(doubling_step::<P>(&mut r));
+            let x = P::ATE_LOOP_COUNT[i - 1];
+            match x {
+                1 => {
+                    ell_coeffs.push(addition_step::<P>(&mut r, &q));
+                },
+                -1 => {
+                    ell_coeffs.push(addition_step::<P>(&mut r, &negq));
+                },
+                _ => continue,
             }
         }
 
