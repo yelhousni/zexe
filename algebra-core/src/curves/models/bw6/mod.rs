@@ -255,7 +255,7 @@ impl<P: BW6Parameters> PairingEngine for BW6<P> {
             f_1.conjugate();
         }
 
-        // f_{u^2-u^2-u,Q}(P)
+        // f_{u^3-u^2-u,Q}(P)
         let mut f_2 = Self::Fqk::one();
 
         for i in (1..P::ATE_LOOP_COUNT_2.len()).rev() {

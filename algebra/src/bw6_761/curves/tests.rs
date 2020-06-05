@@ -1,9 +1,25 @@
-use algebra_core::{test_rng, AffineCurve, Field, One, PairingEngine, PrimeField, ProjectiveCurve};
-use rand::Rng;
+use algebra_core::{
+    test_rng, AffineCurve, Field, One, PairingEngine, PrimeField, ProjectiveCurve,
+    msm::VariableBaseMSM, UniformRand, Zero,
+};
+use rand::{Rng, SeedableRng};
+use rand_xorshift::XorShiftRng;
 
 use crate::bw6_761::*;
 
 use crate::tests::{curves::*, groups::*};
+
+fn naive_var_base_msm<G: AffineCurve>(
+    bases: &[G],
+    scalars: &[<G::ScalarField as PrimeField>::BigInt],
+) -> G::Projective {
+    let mut acc = G::Projective::zero();
+
+    for (base, scalar) in bases.iter().zip(scalars.iter()) {
+        acc += &base.mul(*scalar);
+    }
+    acc
+}
 
 #[test]
 fn test_g1_projective_curve() {
@@ -73,4 +89,42 @@ fn test_bilinearity() {
     assert_eq!(ans1.pow(Fr::characteristic()), Fq6::one());
     assert_eq!(ans2.pow(Fr::characteristic()), Fq6::one());
     assert_eq!(ans3.pow(Fr::characteristic()), Fq6::one());
+}
+
+#[test]
+fn test_msm() {
+    const SAMPLES: usize = 1 << 10;
+
+    let mut rng = XorShiftRng::seed_from_u64(234872845u64);
+
+    let v = (0..SAMPLES)
+        .map(|_| Fr::rand(&mut rng).into_repr())
+        .collect::<Vec<_>>();
+    let g = (0..SAMPLES)
+        .map(|_| G1Projective::rand(&mut rng).into_affine())
+        .collect::<Vec<_>>();
+
+    let naive = naive_var_base_msm(g.as_slice(), v.as_slice());
+    let fast = VariableBaseMSM::multi_scalar_mul(g.as_slice(), v.as_slice());
+
+    assert_eq!(naive.into_affine(), fast.into_affine());
+}
+
+#[test]
+fn test_msm_unequal_numbers() {
+    const SAMPLES: usize = 1 << 10;
+
+    let mut rng = XorShiftRng::seed_from_u64(234872845u64);
+
+    let v = (0..SAMPLES - 1)
+        .map(|_| Fr::rand(&mut rng).into_repr())
+        .collect::<Vec<_>>();
+    let g = (0..SAMPLES)
+        .map(|_| G1Projective::rand(&mut rng).into_affine())
+        .collect::<Vec<_>>();
+
+    let naive = naive_var_base_msm(g.as_slice(), v.as_slice());
+    let fast = VariableBaseMSM::multi_scalar_mul(g.as_slice(), v.as_slice());
+
+    assert_eq!(naive.into_affine(), fast.into_affine());
 }
