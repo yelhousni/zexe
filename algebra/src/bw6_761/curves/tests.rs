@@ -1,3 +1,4 @@
+use std::time::Instant;
 use algebra_core::{
     test_rng, AffineCurve, Field, One, PairingEngine, PrimeField, ProjectiveCurve,
     msm::VariableBaseMSM, UniformRand, Zero,
@@ -136,8 +137,15 @@ fn test_g1_msm_single() {
     let scalar = Fr::rand(&mut rng).into_repr();
     let base = G1Projective::rand(&mut rng).into_affine();
 
+    let start = Instant::now();
     let mul = base.mul(scalar);
+    let duration = start.elapsed();
+    println!("G1MUL: {:?}", duration);
+
+    let start = Instant::now();
     let msm = VariableBaseMSM::multi_scalar_mul(&[base], &[scalar]);
+    let duration = start.elapsed();
+    println!("G1MSM-1: {:?}", duration);
 
     assert_eq!(mul.into_affine(), msm.into_affine());
 }
