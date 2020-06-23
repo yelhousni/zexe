@@ -55,6 +55,11 @@ impl TEModelParameters for EdwardsParameters {
         0xe0a77c19a07df2f,
     ]));
 
+    #[inline(always)]
+    fn mul_by_a(elem: &Self::BaseField) -> Self::BaseField {
+        *elem
+    }
+
     /// COEFF_D = 168696/168700 mod q
     ///         = 9706598848417545097372247223557719406784115219466060233080913168975159366771
     #[rustfmt::skip]
