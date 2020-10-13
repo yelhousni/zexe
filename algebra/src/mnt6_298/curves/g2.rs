@@ -11,7 +11,6 @@ use algebra_core::{
 
 pub type G2Affine = mnt6::G2Affine<mnt6_298::Parameters>;
 pub type G2Projective = mnt6::G2Projective<mnt6_298::Parameters>;
-pub type G2Prepared = mnt6::G2Prepared<mnt6_298::Parameters>;
 
 #[derive(Clone, Default, PartialEq, Eq)]
 pub struct Parameters;

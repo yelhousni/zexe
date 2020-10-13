@@ -15,8 +15,8 @@ pub mod g2;
 mod tests;
 
 pub use self::{
-    g1::{G1Affine, G1Prepared, G1Projective},
-    g2::{G2Affine, G2Prepared, G2Projective},
+    g1::{G1Affine, G1Projective},
+    g2::{G2Affine, G2Projective},
 };
 
 pub type MNT6_298 = MNT6<Parameters>;
@@ -38,7 +38,6 @@ impl MNT6Parameters for Parameters {
         ])),
     );
     const ATE_LOOP_COUNT: &'static [u64] = &[0xdc9a1b671660000, 0x46609756bec2a33f, 0x1eef55];
-    const ATE_IS_LOOP_COUNT_NEG: bool = true;
     const FINAL_EXPONENT_LAST_CHUNK_1: BigInteger320 = BigInteger320([0x1, 0x0, 0x0, 0x0, 0x0]);
     const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool = true;
     const FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0: BigInteger320 =

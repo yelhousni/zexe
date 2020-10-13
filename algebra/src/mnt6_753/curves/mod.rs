@@ -18,8 +18,8 @@ pub mod g2;
 mod tests;
 
 pub use self::{
-    g1::{G1Affine, G1Prepared, G1Projective},
-    g2::{G2Affine, G2Prepared, G2Projective},
+    g1::{G1Affine, G1Projective},
+    g2::{G2Affine, G2Projective},
 };
 
 pub type MNT6_753 = MNT6<Parameters>;
@@ -49,7 +49,6 @@ impl MNT6Parameters for Parameters {
         9717849827920685054,
         95829799234282493,
     ];
-    const ATE_IS_LOOP_COUNT_NEG: bool = false;
     const FINAL_EXPONENT_LAST_CHUNK_1: BigInteger768 =
         BigInteger768([0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0]);
     const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool = false;

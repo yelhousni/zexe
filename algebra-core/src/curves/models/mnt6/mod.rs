@@ -1,6 +1,7 @@
 use crate::{
     curves::{
         models::{ModelParameters, SWModelParameters},
+        short_weierstrass_jacobian::{GroupAffine, GroupProjective},
         PairingEngine,
     },
     fields::{
@@ -8,19 +9,15 @@ use crate::{
         fp6_2over3::{Fp6, Fp6Parameters},
         BitIteratorBE, Field, PrimeField, SquareRootField,
     },
-    One, Zero,
+    One,
 };
 
 use core::marker::PhantomData;
 
-pub mod g1;
-pub mod g2;
-
-use self::g2::{AteAdditionCoefficients, AteDoubleCoefficients, G2ProjectiveExtended};
-pub use self::{
-    g1::{G1Affine, G1Prepared, G1Projective},
-    g2::{G2Affine, G2Prepared, G2Projective},
-};
+pub type G1Affine<P> = GroupAffine<<P as MNT6Parameters>::G1Parameters>;
+pub type G1Projective<P> = GroupProjective<<P as MNT6Parameters>::G1Parameters>;
+pub type G2Affine<P> = GroupAffine<<P as MNT6Parameters>::G2Parameters>;
+pub type G2Projective<P> = GroupProjective<<P as MNT6Parameters>::G2Parameters>;
 
 pub type GT<P> = Fp6<P>;
 
@@ -28,7 +25,6 @@ pub trait MNT6Parameters: 'static {
     const TWIST: Fp3<Self::Fp3Params>;
     const TWIST_COEFF_A: Fp3<Self::Fp3Params>;
     const ATE_LOOP_COUNT: &'static [u64];
-    const ATE_IS_LOOP_COUNT_NEG: bool;
     const FINAL_EXPONENT_LAST_CHUNK_1: <Self::Fp as PrimeField>::BigInt;
     const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool;
     const FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0: <Self::Fp as PrimeField>::BigInt;
@@ -48,106 +44,64 @@ pub trait MNT6Parameters: 'static {
 pub struct MNT6<P: MNT6Parameters>(PhantomData<fn() -> P>);
 
 impl<P: MNT6Parameters> MNT6<P> {
-    fn doubling_step_for_flipped_miller_loop(
-        r: &G2ProjectiveExtended<P>,
-    ) -> (G2ProjectiveExtended<P>, AteDoubleCoefficients<P>) {
-        let a = r.t.square();
-        let b = r.x.square();
-        let c = r.y.square();
-        let d = c.square();
-        let e = (r.x + &c).square() - &b - &d;
-        let f = (b + &b + &b) + &(P::TWIST_COEFF_A * &a);
-        let g = f.square();
+    fn ate_miller_loop(p: &G1Affine<P>, q: &G2Affine<P>) -> Fp6<P::Fp6Params> {
+        let px = p.x;
+        let py = p.y;
+        let qx = q.x;
+        let qy = q.y;
+        let mut py_twist_squared = P::TWIST.square();
+        py_twist_squared.mul_assign_by_fp(&py);
 
-        let d_eight = d.double().double().double();
+        let mut old_rx;
+        let mut old_ry;
+        let mut rx = qx;
+        let mut ry = qy;
+        let mut f = Fp6::one();
 
-        let e2 = e.double();
-        let x = g - &e2.double();
-        let y = -d_eight + &(f * &(e2 - &x));
-        let z = (r.y + &r.z).square() - &c - &r.z.square();
-        let t = z.square();
-
-        let r2 = G2ProjectiveExtended { x, y, z, t };
-        let coeff = AteDoubleCoefficients {
-            c_h: (r2.z + &r.t).square() - &r2.t - &a,
-            c_4c: c + &c + &c + &c,
-            c_j: (f + &r.t).square() - &g - &a,
-            c_l: (f + &r.x).square() - &g - &b,
-        };
-
-        (r2, coeff)
-    }
-
-    fn mixed_addition_step_for_flipped_miller_loop(
-        x: &Fp3<P::Fp3Params>,
-        y: &Fp3<P::Fp3Params>,
-        r: &G2ProjectiveExtended<P>,
-    ) -> (G2ProjectiveExtended<P>, AteAdditionCoefficients<P>) {
-        let a = y.square();
-        let b = r.t * x;
-        let d = ((r.z + y).square() - &a - &r.t) * &r.t;
-        let h = b - &r.x;
-        let i = h.square();
-        let e = i + &i + &i + &i;
-        let j = h * &e;
-        let v = r.x * &e;
-        let ry2 = r.y.double();
-        let l1 = d - &ry2;
-
-        let x = l1.square() - &j - &(v + &v);
-        let y = l1 * &(v - &x) - &(j * &ry2);
-        let z = (r.z + &h).square() - &r.t - &i;
-        let t = z.square();
-
-        let r2 = G2ProjectiveExtended { x, y, z, t };
-        let coeff = AteAdditionCoefficients { c_l1: l1, c_rz: z };
-
-        (r2, coeff)
-    }
-
-    pub fn ate_miller_loop(p: &G1Prepared<P>, q: &G2Prepared<P>) -> Fp6<P::Fp6Params> {
-        let l1_coeff = Fp3::new(p.x, P::Fp::zero(), P::Fp::zero()) - &q.x_over_twist;
-
-        let mut f = <Fp6<P::Fp6Params>>::one();
-
-        let mut dbl_idx: usize = 0;
-        let mut add_idx: usize = 0;
-
-        // code below gets executed for all bits (EXCEPT the MSB itself) of
+        // The for loop is executed for all bits (EXCEPT the MSB itself) of
         // mnt6_param_p (skipping leading zeros) in MSB to LSB order
         for bit in BitIteratorBE::without_leading_zeros(P::ATE_LOOP_COUNT).skip(1) {
-            let dc = &q.double_coefficients[dbl_idx];
-            dbl_idx += 1;
+            old_rx = rx;
+            old_ry = ry;
 
-            let g_rr_at_p = Fp6::new(
-                dc.c_l - &dc.c_4c - &(dc.c_j * &p.x_twist),
-                dc.c_h * &p.y_twist,
-            );
+            let old_rx_square = old_rx.square();
+            let old_rx_square_3 = old_rx_square.double() + &old_rx_square;
+            let old_rx_square_3_a = old_rx_square_3 + &P::TWIST_COEFF_A;
+            let old_ry_double_inverse = old_ry.double().inverse().unwrap();
 
-            f = f.square() * &g_rr_at_p;
+            let gamma = old_rx_square_3_a * &old_ry_double_inverse;
+            let gamma_twist = gamma * &P::TWIST;
+            let gamma_old_rx = gamma * &old_rx;
+            let mut gamma_twist_px = gamma_twist;
+            gamma_twist_px.mul_assign_by_fp(&px);
+
+            let x = py_twist_squared;
+            let y = gamma_old_rx - &old_ry - &gamma_twist_px;
+            let ell_rr_at_p = Fp6::new(x, y);
+
+            rx = gamma.square() - &old_rx.double();
+            ry = gamma * &(old_rx - &rx) - &old_ry;
+            f = f.square() * &ell_rr_at_p;
 
             if bit {
-                let ac = &q.addition_coefficients[add_idx];
-                add_idx += 1;
+                old_rx = rx;
+                old_ry = ry;
 
-                let g_rq_at_p = Fp6::new(
-                    ac.c_rz * &p.y_twist,
-                    -(q.y_over_twist * &ac.c_rz + &(l1_coeff * &ac.c_l1)),
-                );
-                f *= &g_rq_at_p;
+                let gamma = (old_ry - &qy) * &((old_rx - &qx).inverse().unwrap());
+                let gamma_twist = gamma * &P::TWIST;
+                let gamma_qx = gamma * &qx;
+                let mut gamma_twist_px = gamma_twist;
+                gamma_twist_px.mul_assign_by_fp(&px);
+
+                let x = py_twist_squared;
+                let y = gamma_qx - &qy - &gamma_twist_px;
+                let ell_rq_at_p = Fp6::new(x, y);
+
+                rx = gamma.square() - &old_rx - &qx;
+                ry = gamma * &(old_rx - &rx) - &old_ry;
+                f = f * &ell_rq_at_p;
             }
         }
-
-        if P::ATE_IS_LOOP_COUNT_NEG {
-            let ac = &q.addition_coefficients[add_idx];
-
-            let g_rnegr_at_p = Fp6::new(
-                ac.c_rz * &p.y_twist,
-                -(q.y_over_twist * &ac.c_rz + &(l1_coeff * &ac.c_l1)),
-            );
-            f = (f * &g_rnegr_at_p).inverse().unwrap();
-        }
-
         f
     }
 
@@ -199,12 +153,12 @@ impl<P: MNT6Parameters> MNT6<P> {
 
 impl<P: MNT6Parameters> PairingEngine for MNT6<P> {
     type Fr = <P::G1Parameters as ModelParameters>::ScalarField;
-    type G1Projective = G1Projective<P>;
     type G1Affine = G1Affine<P>;
-    type G1Prepared = G1Prepared<P>;
-    type G2Projective = G2Projective<P>;
+    type G1Projective = G1Projective<P>;
+    type G1Prepared = G1Affine<P>;
     type G2Affine = G2Affine<P>;
-    type G2Prepared = G2Prepared<P>;
+    type G2Projective = G2Projective<P>;
+    type G2Prepared = G2Affine<P>;
     type Fq = P::Fp;
     type Fqe = Fp3<P::Fp3Params>;
     type Fqk = Fp6<P::Fp6Params>;

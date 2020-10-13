@@ -10,7 +10,6 @@ use algebra_core::{
 
 pub type G1Affine = mnt6::G1Affine<mnt6_298::Parameters>;
 pub type G1Projective = mnt6::G1Projective<mnt6_298::Parameters>;
-pub type G1Prepared = mnt6::G1Prepared<mnt6_298::Parameters>;
 
 #[derive(Clone, Default, PartialEq, Eq)]
 pub struct Parameters;
