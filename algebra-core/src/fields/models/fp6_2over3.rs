@@ -108,4 +108,44 @@ impl<P: Fp6Parameters> Fp6<P> {
         self.c1.c1 = x0 * &z4 + &(x1 * &z3) + &(x4 * &z0);
         self.c1.c2 = x0 * &z5 + &(x1 * &z4) + &(x4 * &z1);
     }
+
+    pub fn mul_by_2345(
+        &mut self,
+        other: Fp6<P>,
+    ) {
+        /* Devegili OhEig Scott Dahab --- Multiplication and Squaring on Pairing-Friendly Fields.pdf; Section 3 (Complex) */
+        let a = self.c0;
+        let b = self.c1;
+        let c = other.c0;
+        let d = other.c1;
+
+        let mut tmp1 = c.c2;
+        tmp1.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
+        let mut tmp2 = tmp1;
+        tmp2.mul_assign(&a.c1);
+
+        let mut tmp3 = tmp1;
+        tmp3.mul_assign(&a.c2);
+
+        let mut tmp4 = c.c2;
+        tmp4.mul_assign(&a.c0);
+
+        let mut ac: Fp3<P::Fp3Params> = a;
+        ac.c0 = tmp2;
+        ac.c1 = tmp3;
+        ac.c2 = tmp4;
+
+        let mut bd = b;
+        bd.mul_assign(&d);
+
+        let mut beta_bd: Fp3<P::Fp3Params> = bd;
+        beta_bd.c0 = bd.c2;
+        beta_bd.c0.mul_assign(&<P::Fp3Params as Fp3Parameters>::NONRESIDUE);
+        beta_bd.c1 = bd.c0;
+        beta_bd.c2 = bd.c1;
+
+        self.c0 = ac + &beta_bd;
+        self.c1 = (a + &b) * &(c + &d) - &ac - &bd;
+    }
+
 }

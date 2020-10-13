@@ -81,7 +81,8 @@ impl<P: MNT6Parameters> MNT6<P> {
 
             rx = gamma.square() - &old_rx.double();
             ry = gamma * &(old_rx - &rx) - &old_ry;
-            f = f.square() * &ell_rr_at_p;
+            f = f.square();
+            f.mul_by_2345(ell_rr_at_p);
 
             if bit {
                 old_rx = rx;
@@ -99,7 +100,7 @@ impl<P: MNT6Parameters> MNT6<P> {
 
                 rx = gamma.square() - &old_rx - &qx;
                 ry = gamma * &(old_rx - &rx) - &old_ry;
-                f = f * &ell_rq_at_p;
+                f.mul_by_2345(ell_rq_at_p);
             }
         }
         f
