@@ -7,7 +7,7 @@ use crate::{
     fields::{
         fp3::{Fp3, Fp3Parameters},
         fp6_2over3::{Fp6, Fp6Parameters},
-        BitIteratorBE, Field, PrimeField, SquareRootField,
+        Field, PrimeField, SquareRootField,
     },
     One,
 };
@@ -24,7 +24,7 @@ pub type GT<P> = Fp6<P>;
 pub trait MNT6Parameters: 'static {
     const TWIST: Fp3<Self::Fp3Params>;
     const TWIST_COEFF_A: Fp3<Self::Fp3Params>;
-    const ATE_LOOP_COUNT: &'static [u64];
+    const ATE_LOOP_COUNT: &'static [i8];
     const FINAL_EXPONENT_LAST_CHUNK_1: <Self::Fp as PrimeField>::BigInt;
     const FINAL_EXPONENT_LAST_CHUNK_W0_IS_NEG: bool;
     const FINAL_EXPONENT_LAST_CHUNK_ABS_OF_W0: <Self::Fp as PrimeField>::BigInt;
@@ -58,9 +58,7 @@ impl<P: MNT6Parameters> MNT6<P> {
         let mut ry = qy;
         let mut f = Fp6::one();
 
-        // The for loop is executed for all bits (EXCEPT the MSB itself) of
-        // mnt6_param_p (skipping leading zeros) in MSB to LSB order
-        for bit in BitIteratorBE::without_leading_zeros(P::ATE_LOOP_COUNT).skip(1) {
+        for i in (1..P::ATE_LOOP_COUNT.len()).rev() {
             old_rx = rx;
             old_ry = ry;
 
@@ -84,23 +82,45 @@ impl<P: MNT6Parameters> MNT6<P> {
             f = f.square();
             f.mul_by_2345(ell_rr_at_p);
 
-            if bit {
-                old_rx = rx;
-                old_ry = ry;
+            let bit = P::ATE_LOOP_COUNT[i - 1];
+            match bit {
+                1 => {
+                    old_rx = rx;
+                    old_ry = ry;
 
-                let gamma = (old_ry - &qy) * &((old_rx - &qx).inverse().unwrap());
-                let gamma_twist = gamma * &P::TWIST;
-                let gamma_qx = gamma * &qx;
-                let mut gamma_twist_px = gamma_twist;
-                gamma_twist_px.mul_assign_by_fp(&px);
+                    let gamma = (old_ry - &qy) * &((old_rx - &qx).inverse().unwrap());
+                    let gamma_twist = gamma * &P::TWIST;
+                    let gamma_qx = gamma * &qx;
+                    let mut gamma_twist_px = gamma_twist;
+                    gamma_twist_px.mul_assign_by_fp(&px);
 
-                let x = py_twist_squared;
-                let y = gamma_qx - &qy - &gamma_twist_px;
-                let ell_rq_at_p = Fp6::new(x, y);
+                    let x = py_twist_squared;
+                    let y = gamma_qx - &qy - &gamma_twist_px;
+                    let ell_rq_at_p = Fp6::new(x, y);
 
-                rx = gamma.square() - &old_rx - &qx;
-                ry = gamma * &(old_rx - &rx) - &old_ry;
-                f.mul_by_2345(ell_rq_at_p);
+                    rx = gamma.square() - &old_rx - &qx;
+                    ry = gamma * &(old_rx - &rx) - &old_ry;
+                    f.mul_by_2345(ell_rq_at_p);
+                }
+                -1 => {
+                    old_rx = rx;
+                    old_ry = ry;
+
+                    let gamma = (old_ry + &qy) * &((old_rx - &qx).inverse().unwrap());
+                    let gamma_twist = gamma * &P::TWIST;
+                    let gamma_qx = gamma * &qx;
+                    let mut gamma_twist_px = gamma_twist;
+                    gamma_twist_px.mul_assign_by_fp(&px);
+
+                    let x = py_twist_squared;
+                    let y = gamma_qx + &qy - &gamma_twist_px;
+                    let ell_rq_at_p = Fp6::new(x, y);
+
+                    rx = gamma.square() - &old_rx - &qx;
+                    ry = gamma * &(old_rx - &rx) - &old_ry;
+                    f.mul_by_2345(ell_rq_at_p);
+                }
+                _ => continue,
             }
         }
         f
